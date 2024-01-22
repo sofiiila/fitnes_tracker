@@ -25,9 +25,14 @@ class Training:
     M_IN_KM = 1000
     LEN_STEP = 0.65   
 
-    action: int
-    duration: float
-    weight: float 
+    def __init__(
+            self, 
+            action: int, 
+            duration: float, 
+            weight: float) -> None: 
+        self.action = action 
+        self.duration = duration 
+        self.weight = weight
 
     @property
     def get_distance(self) -> float:
@@ -54,26 +59,59 @@ class Training:
       
 class Running(Training):
     """Вид тренировки: бег."""
+    first_coef: int = 18 
+    second_coef: int = 20
   
     @property
-    def get_spent_calories(self) -> float:
-          return ((18 * self.get_mean_speed + 1.79) * self.weight / self.M_IN_KM * self.duration)
+    def get_spent_calories(self) -> float: 
+        return ((self.first_coef 
+                * self.get_mean_speed() 
+                - self.second_coef) 
+                * self.weight 
+                / self.M_IN_KM 
+                * self.duration 
+                * self.MIN_IN_H)
     
 class SportsWalking(Training):  
-    """Вид тренировки: спортивная ходьба."""  
-    def __init__(self, action: int, duration: float, weight: float, height: float):
+    """Вид тренировки: спортивная ходьба."""
+    first_coef: float = 0.035 
+    second_coef: int = 2 
+    thrid_coef: float = 0.029
+
+    def __init__(
+            self, 
+            action: int,
+            duration: float, 
+            weight: float, 
+            height: float):
           super().__init__(action, duration, weight)
           self.height = height
 
     @property
-    def get_spent_calories(self):
-          return ((0.035 * self.weight + (self.get_mean_speed ** 2 / self.height) * 0.029 * self.weight) * self.duration)
+    def get_spent_calories(self) -> float: 
+        return ((self.first_coef 
+                * self.weight 
+                + (self.get_mean_speed() 
+                    ** self.second_coef 
+                    // self.height) 
+                * self.thrid_coef 
+                * self.weight) 
+                * self.duration 
+                * self.MIN_IN_H)
 
 class Swimming(Training):
     """Вид тренировки: плавание."""
     LEN_STEP = 1.38
+    first_coef: float = 1.1 
+    second_coef: int = 2 
     
-    def __init__(self, action: int, duration: float, weight: float, length_pool: float, count_pool: float):
+    def __init__(
+            self, 
+            action: int, 
+            duration: float,
+            weight: float, 
+            length_pool: float, 
+            count_pool: float):
           super().__init__(action, duration, weight)
           self.length_pool = length_pool
           self.count_pool = count_pool
@@ -84,18 +122,27 @@ class Swimming(Training):
 
     @property 
     def get_spent_calories(self):
-          return (self.get_mean_speed + 1.1) * 2 * self.weight
+          return ( 
+            (self.get_mean_speed() 
+                + self.first_coef) 
+            * self.second_coef 
+            * self.weight)
 
 def read_package(workout_type: str, data: list) -> Training: 
     """Прочитать данные полученные от датчиков.""" 
     parameters_train = { 
-        'SWM': Swimming, 
-        'RUN': Running, 
+        'RUN': Running,
+        'SWM': Swimming,          
         'WLK': SportsWalking} 
-    if workout_type in parameters_train: 
-        return parameters_train[workout_type](*data) 
-    else: 
-        pass 
+    if workout_type not in parameters_train: 
+        raise ValueError("Unknown workout type")
+    
+    if workout_type == "RUN":
+        return parameters_train[workout_type](*data[:3])  
+    elif workout_type == "SWM":
+        return parameters_train[workout_type](*data[:5])  
+    elif workout_type == "WLK":
+        return parameters_train[workout_type](*data[:4])
 
 def main(training: Training) -> None:
     """Главная функция"""
