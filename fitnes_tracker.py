@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 @dataclass
 class InfoMessage:
@@ -10,20 +10,22 @@ class InfoMessage:
     distance: float
     speed: float
     calories: float
+    MESSAGE = ('Тип тренировки: {}; ' 
+               'Длительность: {:.3f} ч.; ' 
+               'Дистанция: {:.3f} км; ' 
+               'Ср. скорость: {:.3f} км/ч; ' 
+               'Потрачено ккал: {:.3f}.') 
 
-    def get_message(self) -> str:
-        return (           
-            f'Тип тренировки: {self.training_type}; ' 
-            f'Длительность: {self.duration:.3f} ч.; ' 
-            f'Дистанция: {self.distance:.3f} км; ' 
-            f'Ср. скорость: {self.speed:.3f} км/ч; ' 
-            f'Потрачено ккал: {self.calories:.3f}.') 
+    def get_message(self) -> None: 
+        t = asdict(self) 
+        return self.MESSAGE.format(*t.values()) 
 
 @dataclass     
 class Training:
     """Базовый класс тренировки"""
     M_IN_KM = 1000
     LEN_STEP = 0.65   
+    MIN_IN_H: int = 60
 
     def __init__(
             self, 
@@ -46,16 +48,18 @@ class Training:
         
     def get_spent_calories(self) -> float:
         """ВЫчисление затраченных калорий"""
-        pass
+        raise NotImplementedError( 
+            'Определите get_spent_calories в %s.' % 
+            (self.__class__.__name__))
 
     def show_training_info(self) -> InfoMessage:
         """Возврат сообщения о результатах тренировки"""
         return InfoMessage( 
             type(self).__name__,  
             self.duration, 
-            self.get_distance, 
-            self.get_mean_speed, 
-            self.get_spent_calories)  
+            self.get_distance(), 
+            self.get_mean_speed(), 
+            self.get_spent_calories())  
       
 class Running(Training):
     """Вид тренировки: бег."""
@@ -134,24 +138,24 @@ def read_package(workout_type: str, data: list) -> Training:
         'RUN': Running,
         'SWM': Swimming,          
         'WLK': SportsWalking} 
-    if workout_type not in parameters_train: 
-        raise ValueError("Unknown workout type")
+    if len(data) < 3:
+        raise ValueError("invalid data")
     
     if workout_type == "RUN":
-        return parameters_train[workout_type](*data[:3])  
+        return Running(*data[:3])  
     elif workout_type == "SWM":
-        return parameters_train[workout_type](*data[:5])  
+        return Swimming(*data[:5])  
     elif workout_type == "WLK":
-        return parameters_train[workout_type](*data[:4])
+        return SportsWalking(*data[:4])
+    else:
+        raise ValueError("Unknown workout type")
+
 
 def main(training: Training) -> None:
     """Главная функция"""
-    try:
-        message_train = training.show_training_info()
-        print(message_train.get_message())
-    except AttributeError:
-        print("Данный тип тренировки неизвестен")
-    pass
+    message_train = training.show_training_info()
+    print(message_train.get_message())
+    
 
 if __name__ == "__main__":
     packages = [        
@@ -160,15 +164,21 @@ if __name__ == "__main__":
         ("WLK", [9000, 1, 75, 180]),
     ]
 
-    for workout_type, data in packages:       
-        if data[0] > 0:
-            training = read_package(workout_type, data)
-            main(training)
-        else:
-            print('Вы еще не начали тренироваться=)')
-    else:
-        print('Не определен тип тренировки или датчики неисправны')
-                
-
+    for i in range(len(packages)): 
+        if len(packages[i]) == 2: 
+            workout_type = packages[i][0] 
+            data = packages[i][1] 
+            if packages[i][1][0] > 0: 
+                try: 
+                    training = read_package(workout_type, data) 
+                    main(training) 
+                except (ValueError, TypeError): 
+                    print('Не определен тип тренировки') 
+                except ZeroDivisionError: 
+                    print('Датчики не исправны') 
+            else: 
+                print('Вы еще не начали тренироваться=)') 
+        else: 
+            print('Не определен тип тренировки или датчики неисправны')
         
         
