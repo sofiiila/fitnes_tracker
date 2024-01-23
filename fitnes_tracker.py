@@ -57,9 +57,9 @@ class Training:
         return InfoMessage( 
             type(self).__name__,  
             self.duration, 
-            self.get_distance(), 
-            self.get_mean_speed(), 
-            self.get_spent_calories())  
+            self.get_distance, 
+            self.get_mean_speed, 
+            self.get_spent_calories)  
       
 class Running(Training):
     """Вид тренировки: бег."""
@@ -69,7 +69,7 @@ class Running(Training):
     @property
     def get_spent_calories(self) -> float: 
         return ((self.first_coef 
-                * self.get_mean_speed() 
+                * self.get_mean_speed 
                 - self.second_coef) 
                 * self.weight 
                 / self.M_IN_KM 
@@ -95,7 +95,7 @@ class SportsWalking(Training):
     def get_spent_calories(self) -> float: 
         return ((self.first_coef 
                 * self.weight 
-                + (self.get_mean_speed() 
+                + (self.get_mean_speed 
                     ** self.second_coef 
                     // self.height) 
                 * self.thrid_coef 
